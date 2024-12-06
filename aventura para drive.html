@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cuenta regresiva</title>
+</head>
+<style>
+  body {
+    background-color: rgb(7, 244, 177);
+    color: black;
+    border: 20px;
+    border-radius: 40px;
+    height: 600px;
+  }
+
+  #fechahoy {
+    font-size: 30px;
+    display: flex;
+    justify-content: center;
+  }
+
+  #app {
+    margin-top: 60px;
+  }
+
+  .form {
+    display: flex;
+    justify-content: center;
+    background-color: rgb(0, 255, 229);
+    width: 400px;
+    margin: auto;
+    height: auto;
+  }
+
+  .form input {
+    margin: 5px 10px 10px;
+    display: block;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  #eventName {
+    color: black;
+    background-color: grey;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 10px;
+  }
+
+  #eventDate {
+    color: black;
+    background-color: grey;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 10px;
+  }
+
+  #bAdd {
+    color: black;
+    background-color: grey;
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 10px;
+  }
+
+  button {
+    background-color: red;
+    color: beige;
+    width: 90px;
+    padding: 5px;
+    border-radius: 5px;
+  }
+
+  #eventsContainer {
+    display: flex;
+    flex-direction: column;
+    background-color: azure;
+    margin: 20px auto;
+    padding: 10px;
+    width: 500px;
+    gap: 5px;
+  }
+
+  .event {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px;
+    font-size: 20px;
+
+  }
+
+  #searchInput {
+    width: 290px;
+    height: 30px;
+    margin-left: 30%;
+    border-radius: 10px;
+    background-color: darkgrey;
+    color: black;
+    cursor: pointer;
+    font-size: 30px;
+  }
+   #btn {
+    color: yellow;
+    width: 100%;
+    height: 60px;
+  }
+</style>
+
+<body>
+  <div id="app">
+    <div class="form">
+      <form action="">
+        <input type="text" id="eventName">
+        <input type="date" id="eventDate">
+        <input type="submit" id="bAdd" value="Añadir evento">
+
+      </form>
+    </div>
+    <div id="fechahoy"></div>
+    <div class="search">
+      <input type="text" id="searchInput" placeholder="Buscar ">
+    </div>
+    <div id="eventsContainer"></div>
+  </div>
+  
+  <div id="btn">
+   <a href="//api.callmebot.com/whatsapp.php?phone=+34638703618&apikey=9126785&textThis+is+a+test+from+my+appliance+%F0%9F%98%84="></a>
+   
+  </div>
+  <script>
+    // Fecha 
+    var d = new Date();
+    var month = new Array(12); month[0] = 'Enero'; month[1] = 'Febrero'; month[2] = 'Marzo'; month[3] = 'Abril'; month[4] = 'Mayo'; month[5] = 'Junio'; month[6] = 'Julio'; month[7] = 'Agosto'; month[8] = 'Septiembre'; month[9] = 'Octubre'; month[10] = 'Noviembre'; month[11] = 'Diciembre'; var todaysDate = +d.getDate() + ' de ' + month[d.getUTCMonth()] + ' del ' + d.getUTCFullYear();
+    document.getElementById('fechahoy').innerHTML = 'Hoy es: ' + todaysDate;
+
+
+
+    let events = []; // Array para almacenar eventos
+    const eventName = document.querySelector('#eventName');
+    const eventDate = document.querySelector('#eventDate');
+    const eventsContainer = document.querySelector('#eventsContainer');
+    const searchInput = document.querySelector('#searchInput');
+    // Cargar eventos al iniciar
+    loadEvents();
+
+    // Evento al enviar el formulario
+    document.querySelector('form').addEventListener('submit',async e => {
+      e.preventDefault();
+       await addEvent();
+    });
+    // Evento de busqueda
+    searchInput.addEventListener('input', e => {
+      renderEvents(e.target.value);
+    });
+
+    function addEvent() {
+      if (eventName.value.trim() === '' || eventDate.value === '') { // Verificación de campos vacíos
+        return;
+      }
+
+      if (dateDiff(eventDate.value) < 0) { // Verificar si la fecha es anterior
+        return;
+      }
+
+      const newEvent = {
+        id: (Math.random() * 100).toString(36).slice(3),
+        name: eventName.value,
+        date: eventDate.value,
+      };
+
+      events.unshift(newEvent); // Agregar evento al inicio del array
+      saveEvents(); // Guardar eventos en localStorage
+      eventName.value = ''; // Limpiar campo de entrada
+      renderEvents();// Renderizar la lista de eventos
+      checkAlerts(); //alerta 
+    }
+    function dateDiff(d) {
+      const targetDate = new Date(d);
+      const today = new Date();
+      const difference = targetDate.getTime() - today.getTime();
+      return Math.ceil(difference / (1000 * 3600 * 24)); // Calcular la diferencia en días
+    }
+
+    // filtra los eventos
+    function renderEvents(searchTerm = '') {
+      const filteredEvents = events.filter(event =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      filteredEvents.sort((a, b) => {
+        return dateDiff(a.date) - dateDiff(b.date);
+      });
+
+
+
+      const eventsHTML = filteredEvents.map(event => {
+        return `
+              <div class="event">
+                  <div class="days">
+                      <span class="days-number">${dateDiff(event.date)}</span>
+                      <span class="days-text">days</span>
+                  </div>
+                  <div class="event-name">${event.name}</div>
+                  <div class="event-date">${event.date}</div>
+                  <div class="actions">
+                      <button class="bDelete" data-id="${event.id}">delete</button>
+                  </div>
+              </div>
+              `;
+      }).join(""); // Unir eventos en un solo HTML
+
+      eventsContainer.innerHTML = eventsHTML; // Mostrar eventos en el contenedor
+
+      // Agregar evento de eliminación a cada botón
+      document.querySelectorAll(".bDelete").forEach(button => {
+        button.addEventListener("click", e => {
+          const id = button.getAttribute("data-id");
+          events = events.filter(event => event.id !== id); // Filtrar el evento eliminado
+          saveEvents(); // Guardar cambios en localStorage
+          renderEvents(searchInput.value); // Volver a renderizar eventos
+        });
+      });
+    }
+
+    function saveEvents() {
+      localStorage.setItem('events', JSON.stringify(events)); // Guardar eventos en localStorage
+      removeExpiredEvents();//elimina los eventos caducados
+      checkAlerts();//verifica las alertas
+    }
+
+    function loadEvents() {
+      const storedEvents = localStorage.getItem('events'); // Cargar eventos desde localStorage
+      if (storedEvents) {
+        events = JSON.parse(storedEvents); // Convertir de JSON a objeto
+        removeExpiredEvents();//elimina los eventos caducados
+        renderEvents(); // Renderizar eventos cargados
+        checkAlerts(); // verifica alertas
+      }
+    }
+    function checkAlerts() {
+      const today = new Date();
+      events.forEach(event => {
+        const eventDate = new Date(event.date);
+        const timeDiff = eventDate.getTime() - today.getTime()
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        if (daysDiff === 1) {
+          alert(`El evento "${event.name}" esta a menos de 24 horas de caducar.`);
+        }
+      });
+    }
+
+    function removeExpiredEvents(){
+      const today = new Date();
+      events = events.filter(event => {
+        const eventDate =new Date(event.date);
+        return eventDate.getTime() >= today.getTime();
+      });
+      localStorage.setItem('events',JSON.stringify(events));//guarda eventos actu en localStorage
+    }
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventos App</title>
+  <style>
+    body {
+      background-color: antiquewhite;
+      color: black;
+      border: 20px;
+      border-radius: 40px;
+      height: 600px;
+    }
+
+    #fechahoy {
+      font-size: 30px;
+      display: flex;
+      justify-content: center;
+    }
+
+    #app {
+      margin-top: 60px;
+    }
+
+    .form {
+      display: flex;
+      justify-content: center;
+      background-color: rgb(0, 255, 229);
+      width: 400px;
+      margin: auto;
+      height: auto;
+    }
+
+    .form input {
+      margin: 5px 10px 10px;
+      display: block;
+      padding: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #eventName, #eventDate, #bAdd {
+      color: black;
+      background-color: grey;
+      font-size: 20px;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    button {
+      background-color: red;
+      color: beige;
+      width: 90px;
+      padding: 5px;
+      border-radius: 5px;
+    }
+
+    #eventsContainer {
+      display: flex;
+      flex-direction: column;
+      background-color: azure;
+      margin: 20px auto;
+      padding: 10px;
+      width: 500px;
+      height: 300px;
+      gap: 5px;
+    }
+
+    .event {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px;
+      font-size: 20px;
+    }
+
+    #searchInput {
+      width: 290px;
+      height: 30px;
+      margin-left: 30%;
+      border-radius: 10px;
+      background-color: darkgrey;
+      color: black;
+      cursor: pointer;
+      font-size: 30px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="form">
+      <form action="">
+        <input type="text" id="eventName" placeholder="Nombre del evento">
+        <input type="date" id="eventDate">
+        <input type="submit" id="bAdd" value="Añadir evento">
+      </form>
+    </div>
+    <div id="fechahoy"></div>
+    <div class="search">
+      <input type="text" id="searchInput" placeholder="Buscar eventos">
+    </div>
+    <div id="eventsContainer"></div>
+  </div>
+
+  <script>
+    // Fecha
+    var d = new Date();
+    var month = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    var todaysDate = d.getDate() + ' de ' + month[d.getUTCMonth()] + ' del ' + d.getUTCFullYear();
+    document.getElementById('fechahoy').innerHTML = 'Hoy es: ' + todaysDate;
+
+    const eventName = document.querySelector('#eventName');
+    const eventDate = document.querySelector('#eventDate');
+    const eventsContainer = document.querySelector('#eventsContainer');
+    const searchInput = document.querySelector('#searchInput');
+
+    let events = [];
+
+    // Cargar eventos al iniciar
+    loadEvents();
+
+    // Evento al enviar el formulario
+    document.querySelector('form').addEventListener('submit', e => {
+      e.preventDefault();
+      addEvent();
+    });
+
+    // Evento de búsqueda
+    searchInput.addEventListener('input', e => {
+      renderEvents(e.target.value);
+    });
+
+    function addEvent() {
+      if (eventName.value.trim() === '' || eventDate.value === '') {
+        return;
+      }
+      if (dateDiff(eventDate.value) < 0) { // Verificar si la fecha es anterior
+        return;
+      }
+
+      const newEvent = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+        name: eventName.value,
+        date: eventDate.value,
+      };
+
+      events.unshift(newEvent); // agregar evento al inicio del array
+      saveEvents(); // guardar en el localStorage
+      eventName.value = ''; // limpiar campo de entrada
+      eventDate.value = ''; // limpiar campo de entrada
+      renderEvents(); // renderizar la lista de eventos
+      checkAlerts(); // verificar alertas
+    }
+
+    function dateDiff(d) {
+      const targetDate = new Date(d);
+      const today = new Date();
+      const difference = targetDate.getTime() - today.getTime();
+      return Math.ceil(difference / (1000 * 3600 * 24)); // Calcular la diferencia en días
+    }
+
+    function renderEvents(searchTerm = '') {
+      const filteredEvents = events.filter(event =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      filteredEvents.sort((a, b) => {
+        return new Date(a.date) - new Date(b.date);
+      });
+
+      const eventsHTML = filteredEvents.map(event => {
+        return `
+          <div class="event">
+            <div class="days">
+              <span class="days-number">${dateDiff(event.date)}</span>
+              <span class="days-text">días</span>
+            </div>
+            <div class="event-name">${event.name}</div>
+            <div class="event-date">${event.date}</div>
+            <div class="actions">
+              <button class="bDelete" data-id="${event.id}">Eliminar</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      eventsContainer.innerHTML = eventsHTML;
+
+      document.querySelectorAll(".bDelete").forEach(button => {
+        button.addEventListener("click", e => {
+          const id = button.getAttribute("data-id");
+          events = events.filter(event => event.id !== id);
+          saveEvents();
+          renderEvents(searchInput.value);
+        });
+      });
+    }
+
+    function saveEvents() {
+      localStorage.setItem('events', JSON.stringify(events)); // guardar en el localStorage
+    }
+
+    function loadEvents() {
+      const storedEvents = localStorage.getItem('events'); // cargar desde el localStorage
+      if (storedEvents) {
+        events = JSON.parse(storedEvents); // convertir de JSON a objeto
+        renderEvents(); // renderizar eventos cargados
+        checkAlerts(); // verificar alertas al iniciar
+      }
+    }
+
+    function checkAlerts() {
+      const today = new Date();
+      events.forEach(event => {
+        const eventDate = new Date(event.date);
+        const timeDiff = eventDate.getTime() - today.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        if (daysDiff === 0) {
+          // Eliminar eventos caducados
+          events = events.filter(e => e.id !== event.id);
+        } else if (daysDiff === 1) {
+          // Enviar alerta para eventos que faltan 1 día
+          alert(`El evento "${event.name}" está a menos de 24 horas de caducar.`);
+        }
+      });
+      saveEvents(); // Guardar cambios después de eliminar eventos caducados
+      renderEvents(); // Volver a renderizar eventos
+    }
+
+    // Revisar alertas cada minuto
+    setInterval(checkAlerts, 600000);
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
